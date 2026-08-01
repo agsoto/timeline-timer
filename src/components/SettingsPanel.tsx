@@ -1,4 +1,5 @@
 import type { Edge, Settings } from "../types";
+import { MAX_EDGE_MARGIN, MIN_EDGE_MARGIN } from "../lib/storage";
 import { BellIcon, CloseIcon, LockIcon, UnlockIcon } from "./Icons";
 
 interface SettingsPanelProps {
@@ -39,6 +40,25 @@ export function SettingsPanel({ settings, customCssPath, onChange, onResetAppear
             ))}
           </div>
         </fieldset>
+        <label className="setting-row size-setting">
+          <span className="setting-label">
+            <span>Edge margin<small>Distance from the screen edge</small></span>
+          </span>
+          <span className="number-control">
+            <input
+              type="number"
+              min={MIN_EDGE_MARGIN}
+              max={MAX_EDGE_MARGIN}
+              step="1"
+              value={settings.edgeMargin}
+              onChange={(event) => onChange({
+                ...settings,
+                edgeMargin: Math.round(Math.max(MIN_EDGE_MARGIN, Math.min(MAX_EDGE_MARGIN, Number(event.target.value) || 0))),
+              })}
+            />
+            <i>px</i>
+          </span>
+        </label>
         <label className="setting-row">
           <span className="setting-label"><BellIcon /> Remaining-time prompt</span>
           <select

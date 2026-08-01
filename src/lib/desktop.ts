@@ -14,9 +14,11 @@ export async function dockWindow(
   edge: Edge,
   compactMode: boolean,
   compactLabelChars: number,
+  edgeMargin: number,
+  resetDimensions = false,
 ): Promise<void> {
   document.documentElement.dataset.edge = edge;
-  await command("dock_window", { edge, compactMode, compactLabelChars });
+  await command("dock_window", { edge, compactMode, compactLabelChars, edgeMargin, resetDimensions });
 }
 
 export async function setAlwaysOnTop(alwaysOnTop: boolean): Promise<void> {

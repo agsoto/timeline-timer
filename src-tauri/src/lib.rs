@@ -3,8 +3,17 @@ use serde::Serialize;
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
 
-const DEFAULT_HORIZONTAL_HEIGHT: f64 = 300.0;
-const DEFAULT_VERTICAL_WIDTH: f64 = 580.0;
+const DEFAULT_HORIZONTAL_HEIGHT: f64 = 240.0;
+const DEFAULT_VERTICAL_WIDTH: f64 = 400.0;
+const MIN_EDGE_MARGIN: i32 = -100;
+const MAX_EDGE_MARGIN: i32 = 400;
+
+fn physical_edge_margin(logical_margin: i32, scale_factor: f64, available_space: u32) -> i32 {
+    let scaled_margin = (logical_margin.clamp(MIN_EDGE_MARGIN, MAX_EDGE_MARGIN) as f64
+        * scale_factor)
+        .round() as i32;
+    scaled_margin.min(available_space.min(i32::MAX as u32) as i32)
+}
 
 struct CssWatcher {
     _watcher: Mutex<RecommendedWatcher>,
@@ -21,6 +30,13 @@ struct DockState {
 }
 
 impl DockState {
+    fn reset_dimensions(&mut self) {
+        self.normal_horizontal_height = None;
+        self.normal_vertical_width = None;
+        self.compact_horizontal_height = None;
+        self.compact_vertical_width = None;
+    }
+
     fn remember_current_size(&mut self, size: PhysicalSize<u32>) {
         let Some(edge) = self.edge.as_deref() else {
             return;
@@ -65,6 +81,39 @@ impl DockState {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{physical_edge_margin, DockState};
+
+    #[test]
+    fn edge_margin_scales_and_stays_on_screen() {
+        assert_eq!(physical_edge_margin(20, 1.5, 100), 30);
+        assert_eq!(physical_edge_margin(100, 1.5, 80), 80);
+        assert_eq!(physical_edge_margin(900, 1.0, 1000), 400);
+        assert_eq!(physical_edge_margin(-20, 1.5, 100), -30);
+        assert_eq!(physical_edge_margin(-900, 1.0, 100), -100);
+    }
+
+    #[test]
+    fn resetting_dimensions_forgets_every_remembered_layout_size() {
+        let mut state = DockState {
+            edge: Some("right".to_string()),
+            compact_mode: true,
+            normal_horizontal_height: Some(360),
+            normal_vertical_width: Some(720),
+            compact_horizontal_height: Some(114),
+            compact_vertical_width: Some(320),
+        };
+
+        state.reset_dimensions();
+
+        assert!(state.normal_horizontal_height.is_none());
+        assert!(state.normal_vertical_width.is_none());
+        assert!(state.compact_horizontal_height.is_none());
+        assert!(state.compact_vertical_width.is_none());
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct FilePayload {
@@ -103,6 +152,8 @@ fn dock_window(
     edge: String,
     compact_mode: bool,
     compact_label_chars: u32,
+    edge_margin: i32,
+    reset_dimensions: bool,
 ) -> Result<(), String> {
     let monitor = match window
         .current_monitor()
@@ -129,8 +180,12 @@ fn dock_window(
         (logical_compact_vertical_width as f64 * scale_factor).round() as u32;
 
     let mut state = dock_state.lock().map_err(|error| error.to_string())?;
-    state.remember_initial_size(&edge, compact_mode, current_size, *monitor_size);
-    state.remember_current_size(current_size);
+    if reset_dimensions {
+        state.reset_dimensions();
+    } else {
+        state.remember_initial_size(&edge, compact_mode, current_size, *monitor_size);
+        state.remember_current_size(current_size);
+    }
 
     let horizontal_height = if compact_mode {
         state
@@ -153,6 +208,16 @@ fn dock_window(
     }
     .min(monitor_size.width);
     let vertical_height = monitor_size.height;
+    let horizontal_edge_margin = physical_edge_margin(
+        edge_margin,
+        scale_factor,
+        monitor_size.height.saturating_sub(horizontal_height),
+    );
+    let vertical_edge_margin = physical_edge_margin(
+        edge_margin,
+        scale_factor,
+        monitor_size.width.saturating_sub(vertical_width),
+    );
 
     state.edge = Some(edge.clone());
     state.compact_mode = compact_mode;
@@ -161,23 +226,25 @@ fn dock_window(
     let (size, position) = match edge.as_str() {
         "top" => (
             PhysicalSize::new(horizontal_width, horizontal_height),
-            PhysicalPosition::new(origin.x, origin.y),
+            PhysicalPosition::new(origin.x, origin.y + horizontal_edge_margin),
         ),
         "bottom" => (
             PhysicalSize::new(horizontal_width, horizontal_height),
             PhysicalPosition::new(
                 origin.x,
-                origin.y + monitor_size.height as i32 - horizontal_height as i32,
+                origin.y + monitor_size.height as i32
+                    - horizontal_height as i32
+                    - horizontal_edge_margin,
             ),
         ),
         "left" => (
             PhysicalSize::new(vertical_width, vertical_height),
-            PhysicalPosition::new(origin.x, origin.y),
+            PhysicalPosition::new(origin.x + vertical_edge_margin, origin.y),
         ),
         "right" => (
             PhysicalSize::new(vertical_width, vertical_height),
             PhysicalPosition::new(
-                origin.x + monitor_size.width as i32 - vertical_width as i32,
+                origin.x + monitor_size.width as i32 - vertical_width as i32 - vertical_edge_margin,
                 origin.y,
             ),
         ),

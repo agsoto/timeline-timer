@@ -44,7 +44,9 @@ export default function App() {
   const [promptIndex, setPromptIndex] = useState<number | null>(null);
   const [customCssPath, setCustomCssPath] = useState("");
   const [status, setStatus] = useState("Ready");
+  const [windowSizeResetKey, setWindowSizeResetKey] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
+  const resetWindowDimensionsRef = useRef(false);
   const warnedItems = useRef(new Set<string>());
 
   const items = useMemo(() => parseAgenda(agendaText), [agendaText]);
@@ -89,13 +91,17 @@ export default function App() {
   }, [settings.accentColor]);
 
   useEffect(() => {
+    const resetDimensions = resetWindowDimensionsRef.current;
+    resetWindowDimensionsRef.current = false;
     void dockWindow(
       settings.edge,
       compactActive,
       settings.compactLabelChars,
+      settings.edgeMargin,
+      resetDimensions,
     )
       .catch(() => setStatus("Could not dock the window"));
-  }, [compactActive, settings.compactLabelChars, settings.edge]);
+  }, [compactActive, settings.compactLabelChars, settings.edge, settings.edgeMargin, windowSizeResetKey]);
 
   useEffect(() => {
     void setAlwaysOnTop(settings.alwaysOnTop).catch(() => setStatus("Could not change window level"));
@@ -271,12 +277,16 @@ export default function App() {
   }, [announce]);
 
   const resetAppearanceSettings = useCallback(() => {
+    resetWindowDimensionsRef.current = true;
     setSettings(restoreDefaultAppearance);
+    setWindowSizeResetKey((value) => value + 1);
     announce("Appearance and layout reset");
   }, [announce]);
 
   const resetAllSettings = useCallback(() => {
+    resetWindowDimensionsRef.current = true;
     setSettings({ ...DEFAULT_SETTINGS });
+    setWindowSizeResetKey((value) => value + 1);
     announce("All settings reset");
   }, [announce]);
 

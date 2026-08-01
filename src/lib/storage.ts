@@ -2,7 +2,10 @@ import type { Settings } from "../types";
 
 const AGENDA_KEY = "timeline-timer.agenda";
 const SETTINGS_KEY = "timeline-timer.settings";
-const SETTINGS_VERSION = 7;
+const SETTINGS_VERSION = 8;
+
+export const MIN_EDGE_MARGIN = -100;
+export const MAX_EDGE_MARGIN = 400;
 
 type StoredSettings = Partial<Settings> & {
   _version?: number;
@@ -17,6 +20,7 @@ Wrap up 5m`;
 
 export const DEFAULT_SETTINGS: Settings = {
   edge: "top",
+  edgeMargin: 0,
   alwaysOnTop: true,
   locked: false,
   warningSeconds: 30,
@@ -31,6 +35,7 @@ export function restoreDefaultAppearance(settings: Settings): Settings {
   return {
     ...settings,
     edge: DEFAULT_SETTINGS.edge,
+    edgeMargin: DEFAULT_SETTINGS.edgeMargin,
     compactMode: DEFAULT_SETTINGS.compactMode,
     compactLabelChars: DEFAULT_SETTINGS.compactLabelChars,
     compactShowElapsed: DEFAULT_SETTINGS.compactShowElapsed,
@@ -52,6 +57,11 @@ export function loadSettings(): Settings {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}") as StoredSettings;
     delete stored.horizontalHeight;
     delete stored.verticalWidth;
+    if (typeof stored.edgeMargin !== "number" || !Number.isFinite(stored.edgeMargin)) {
+      stored.edgeMargin = DEFAULT_SETTINGS.edgeMargin;
+    } else {
+      stored.edgeMargin = Math.round(Math.max(MIN_EDGE_MARGIN, Math.min(MAX_EDGE_MARGIN, stored.edgeMargin)));
+    }
     if (typeof stored.accentColor !== "string" || !/^#[0-9a-f]{6}$/i.test(stored.accentColor)) {
       stored.accentColor = DEFAULT_SETTINGS.accentColor;
     } else {

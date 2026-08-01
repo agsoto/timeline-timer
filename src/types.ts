@@ -19,6 +19,7 @@ export interface TimelinePosition {
 
 export interface Settings {
   edge: Edge;
+  edgeMargin: number;
   alwaysOnTop: boolean;
   locked: boolean;
   warningSeconds: number;

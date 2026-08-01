@@ -79,3 +79,23 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  checksums:
+    name: Checksums
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Generate and upload SHA-256 checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && 'v__VERSION__' || github.ref_name }}
+        run: |
+          mkdir release-assets
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+          rm -f release-assets/SHA256SUMS.txt
+          (
+            cd release-assets
+            sha256sum * > ../SHA256SUMS.txt
+          )
+          gh release upload "$RELEASE_TAG" SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --clobber

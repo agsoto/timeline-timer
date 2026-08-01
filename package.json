@@ -1,7 +1,7 @@
 {
   "name": "timeline-timer",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An always-on-top visual timeline for presentations, classes, workshops, and focused work",
   "license": "MIT",
   "type": "module",

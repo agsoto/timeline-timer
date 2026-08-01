@@ -52,7 +52,30 @@ Paste the agenda into Timeline Timer and start. The timeline scales each segment
 
 ## Install and run
 
-Packaged installers are published on the repository's [Releases page](https://github.com/agsoto/timeline-timer/releases). To run the app from source, use the commands below.
+### Packaged releases
+
+Windows, Linux, and macOS installers are published on the repository's [Releases page](https://github.com/agsoto/timeline-timer/releases). Choose the MSI or setup executable on Windows, the DMG matching your Mac processor, or the AppImage, DEB, or RPM on Linux.
+
+Packages are currently unsigned, so Windows SmartScreen or macOS Gatekeeper may display a warning.
+
+### Windows Package Manager
+
+Timeline Timer uses the WinGet package identifier `AGSoto.TimelineTimer`. Once the current manifest has been accepted into the WinGet community repository, install or upgrade it with:
+
+```powershell
+winget install --exact --id AGSoto.TimelineTimer
+winget upgrade --exact --id AGSoto.TimelineTimer
+```
+
+### Verify a download
+
+Every release includes `SHA256SUMS.txt`, containing the SHA-256 digest of each packaged asset. On Windows, compare a downloaded installer's hash with that file using:
+
+```powershell
+Get-FileHash '.\Timeline.Timer_0.1.1_x64_en-US.msi' -Algorithm SHA256
+```
+
+### Run from source
 
 Prerequisites are Node.js 20.19 or newer, Rust, and the [Tauri v2 system dependencies](https://v2.tauri.app/start/prerequisites/) for your platform.
 
@@ -89,7 +112,7 @@ When the remaining-time prompt is visible, keys `1`–`4` add 3, 5, 10, or 15 mi
 
 ## Customization
 
-Settings control the dock edge, compact label length, compact time counters, and accent color. Resize the window directly to change its horizontal height or vertical width; those dimensions are restored independently for each orientation. Preferences are persisted and applied immediately. Appearance and layout can be reset independently, or every setting can be restored to its default without removing the agenda.
+Settings control the dock edge and margin, compact label length, compact time counters, and accent color. Resize the window directly to change its horizontal height or vertical width; those dimensions are restored independently for each orientation. Preferences are persisted and applied immediately. Appearance and layout can be reset independently, or every setting can be restored to its default without removing the agenda.
 
 The desktop app also creates `custom.css` in its platform application-config directory on first launch; the exact path appears in Settings. Changes are applied while the app is open. Override the variables in `:root` or any application selector. The base `--accent-rgb`, `--hud-rgb`, `--white-rgb`, and `--black-rgb` channels drive the derived translucent colors, while semantic tokens can be overridden individually.
 

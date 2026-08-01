@@ -31,7 +31,21 @@ describe("settings storage", () => {
     saveSettings({ ...DEFAULT_SETTINGS, edge: "right", accentColor: "#123456" });
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
 
-    expect(saved).toMatchObject({ _version: 7, edge: "right", accentColor: "#123456" });
+    expect(saved).toMatchObject({ _version: 8, edge: "right", edgeMargin: 0, accentColor: "#123456" });
+  });
+
+  it("normalizes the edge margin to whole pixels within its supported range", () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ edgeMargin: 18.6 }));
+    expect(loadSettings().edgeMargin).toBe(19);
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ edgeMargin: -20 }));
+    expect(loadSettings().edgeMargin).toBe(-20);
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ edgeMargin: -900 }));
+    expect(loadSettings().edgeMargin).toBe(-100);
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ edgeMargin: 900 }));
+    expect(loadSettings().edgeMargin).toBe(400);
   });
 
   it("discards legacy size settings now controlled by window resizing", () => {
@@ -52,6 +66,7 @@ describe("settings storage", () => {
     const restored = restoreDefaultAppearance({
       ...DEFAULT_SETTINGS,
       edge: "left",
+      edgeMargin: 80,
       alwaysOnTop: false,
       locked: true,
       warningSeconds: 60,
@@ -64,6 +79,7 @@ describe("settings storage", () => {
 
     expect(restored).toMatchObject({
       edge: DEFAULT_SETTINGS.edge,
+      edgeMargin: DEFAULT_SETTINGS.edgeMargin,
       compactMode: DEFAULT_SETTINGS.compactMode,
       compactLabelChars: DEFAULT_SETTINGS.compactLabelChars,
       compactShowElapsed: DEFAULT_SETTINGS.compactShowElapsed,
